@@ -45,9 +45,10 @@ class Collection {
 }
 
 class Document {
-	_collections = []
 	_data = null
 	_exists = null
+	
+	_onChangeHandlers = new Map()
 	
 	constructor(db, path, parts) {
 		if (parts.length & 1)
@@ -94,6 +95,7 @@ class Document {
 		this._data = data
 		this._exists = true
 		
+		this._callOnChangeHandlers('set')
 		this.db._setDocumentData(this.path, data)
 		
 		return this
@@ -109,6 +111,7 @@ class Document {
 		}
 		this._exists = true
 		
+		this._callOnChangeHandlers('update')
 		this.db._setDocumentData(this.path, this._data)
 		
 		return this
@@ -118,9 +121,26 @@ class Document {
 		this._data = null
 		this._exists = false
 		
+		this._callOnChangeHandlers('delete')
 		this.db._deleteDocument(this.path)
 		
 		return this
+	}
+	
+	_callOnChangeHandlers = action =>
+		this._onChangeHandlers.forEach((_, handler) =>
+			handler(this, action)
+		)
+	
+	onChange = (handler, initial = true) => {
+		if (initial)
+			handler(this, null)
+		
+		this._onChangeHandlers.set(handler, true)
+		
+		return () => {
+			this._onChangeHandlers.delete(handler)
+		}
 	}
 }
 
