@@ -1,16 +1,21 @@
 class Database {
+	prefix = '_localdb'
+	
 	_cache = {}
 	
 	_getDocumentData = path => {
-		const data = localStorage.getItem(`_localdb/${path}`)
+		const data = localStorage.getItem(`${this.prefix}/${path}`)
 		return data && JSON.parse(data)
 	}
 	
 	_setDocumentData = (path, data) =>
-		localStorage.setItem(`_localdb/${path}`, JSON.stringify(data))
+		localStorage.setItem(`${this.prefix}/${path}`, JSON.stringify(data))
 	
 	_deleteDocument = path =>
-		localStorage.removeItem(`_localdb/${path}`)
+		localStorage.removeItem(`${this.prefix}/${path}`)
+	
+	newId = () =>
+		Math.random().toString(16).slice(2)
 	
 	collection = (path, parts) =>
 		this._cache[path] || (
@@ -30,6 +35,7 @@ class Collection {
 		
 		this.db = db
 		
+		this.id = parts[parts.length - 1]
 		this.path = path
 		this.parts = parts
 	}
@@ -41,6 +47,13 @@ class Collection {
 		]
 		
 		return this.db.doc(parts.join('/'), parts)
+	}
+	
+	add = data => {
+		if (typeof data !== 'object')
+			throw new Error('"data" must be an object')
+		
+		return this.doc(this.db.newId()).set(data)
 	}
 }
 
@@ -56,6 +69,7 @@ class Document {
 		
 		this.db = db
 		
+		this.id = parts[parts.length - 1]
 		this.path = path
 		this.parts = parts
 	}
@@ -89,7 +103,7 @@ class Document {
 	}
 	
 	set = data => {
-		if (!data)
+		if (typeof data !== 'object')
 			throw new Error('"data" must be an object')
 		
 		this._data = data
